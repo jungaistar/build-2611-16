@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>사용법 — 응력 계측 결과 후처리 대시보드</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<nav class="topnav" aria-label="주요 메뉴">
+  <div class="topnav-inner">
+    <a class="topnav-brand" href="index.html">응력 계측 후처리 <small>build-2611-16 · 기획 노현석</small></a>
+    <ul class="topnav-links">
+      <li><a href="index.html">도구</a></li>
+      <li><a href="guide.html" class="active" aria-current="page">사용법</a></li>
+      <li><a href="plan.html">기획서</a></li>
+    </ul>
+  </div>
+</nav>
+<header class="hero"><div class="wrap">
+  <div class="eyebrow">사용법</div>
+  <h1>엑셀에 값을 넣고 올리면 대시보드와 보고서가 나옵니다</h1>
+  <p>엑셀 올리기 → 계산 조건 확인 → Stress · Life 대시보드 → 보고서 순서입니다. 파일은 이 브라우저 안에서만 읽습니다.</p>
+</div></header>
+<main><div class="wrap doc">
+
+<div class="card">
+  <h2 style="margin-top:0">1. 엑셀 준비</h2>
+  <p>보내 주신 계측 결과 엑셀 모양을 그대로 읽습니다. 「예제 엑셀 내려받기」로 받은 파일이 입력 양식입니다. 시트 이름과 표의 위치는 달라도 되지만 아래 표가 있어야 합니다.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>표</th><th>알아보는 방법</th><th>없으면</th></tr></thead>
+    <tbody>
+      <tr><td>시나리오별 Max / Min Stress</td><td>채널 이름 열 오른쪽에 시나리오마다 「Max | Min」 두 칸, 그 윗줄에 시나리오 이름</td><td>읽지 못함(필수)</td></tr>
+      <tr><td>Damage per hour</td><td>「Damage per hour」 제목 아래 시나리오 이름 머리줄, 왼쪽 열에 채널</td><td>응력만 분석</td></tr>
+      <tr><td>Case 가중치</td><td>「Case1」「Case2」… 로 시작하는 줄에 시나리오 수만큼 숫자</td><td>Case 수명 계산 안 함</td></tr>
+      <tr><td>Duration time</td><td>「Duration time」 줄에 시나리오별 초(s)</td><td>Total damage 계산 안 함</td></tr>
+      <tr><td>시나리오 범례</td><td>「시나리오1 | 부하 요철 | 사이클」 꼴</td><td>설명 없이 이름만 표시</td></tr>
+    </tbody></table></div>
+  <p>채널 수와 시나리오 수는 정해져 있지 않습니다. 채널을 더 넣거나 시나리오를 5개로 늘려도 됩니다. 빈 칸은 「값 없음」으로 두고 0 과 구분합니다.</p>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">2. 계산식</h2>
+  <p>엑셀에 들어 있던 수식과 같습니다.</p>
+  <ul>
+    <li>Life(시나리오) = 1 ÷ Damage per hour</li>
+    <li>Total damage = Damage per hour × Duration time(s) ÷ 3600</li>
+    <li>Case Damage per hour = Σ(시나리오 Damage per hour × Case 가중치)</li>
+    <li>Case Life = 1 ÷ Case Damage per hour</li>
+    <li>응력 범위 = Max − Min, 절댓값 최대 = max(|Max|, |Min|)</li>
+  </ul>
+  <p>손상이 0 인 채널은 엑셀에서 <code>#DIV/0!</code> 가 나오지만 여기서는 <b>∞(손상 없음)</b>로 표시하고 Green 으로 봅니다.</p>
+  <p>엑셀에 Case Life 값이 적혀 있으면 다시 계산한 값과 비교해 「검산」 결과를 보여 줍니다. 다르면 어느 채널 · Case 인지 알려 줍니다.</p>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">3. 계산 조건</h2>
+  <ul>
+    <li><b>Case 가중치 · Duration time</b> — 표에서 바로 고칠 수 있고, 고치면 전체가 다시 계산됩니다. 「엑셀 값으로 되돌리기」로 원래 값으로 돌아갑니다.</li>
+    <li><b>위험도 기준</b> — 기본은 Red &lt; 20,000 hr ≤ Orange &lt; 50,000 hr ≤ Yellow &lt; 100,000 hr ≤ Green 입니다. 목표 수명에 맞춰 바꿀 수 있습니다. 채널의 등급은 <b>가장 불리한 Case 의 수명</b>으로 매깁니다.</li>
+    <li><b>허용 응력(선택)</b> — 넣으면 안전율(허용 ÷ 절댓값 최대)을 Stress Top10 에 보여 주고 그래프에 기준선을 긋습니다. 비우면 안전율을 만들지 않습니다.</li>
+  </ul>
+  <h3>확인 알림</h3>
+  <ul>
+    <li>가중치 합이 1 이 아닐 때</li>
+    <li>가중치 표의 열 머리글(예: 무부하 기본 · 무부하 요철 · 부하 기본 · 부하 요철)과 시나리오 설명의 순서가 다를 때 — 엑셀 수식은 열 순서대로 곱하므로 가중치가 다른 시나리오에 걸릴 수 있습니다. 계산은 엑셀과 같게 하고 알려만 줍니다.</li>
+    <li>시나리오 설명이 서로 같을 때, Min 이 Max 보다 큰 행, 두 표의 채널이 어긋날 때</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">4. 대시보드 읽기</h2>
+  <ul>
+    <li><b>Stress Dashboard</b> — 시나리오별 Max · Min 그래프, 채널마다 전 시나리오의 최대 인장 ~ 최대 압축 범위, 최대 응력 채널, Top10(절댓값 기준).</li>
+    <li><b>Life Dashboard</b> — Case 별 수명 그래프(막대 색 = 위험도, 점선 = 기준), Case 비교, Life Top10(짧은 순), Worst Channel · Worst Scenario · Worst Case.</li>
+    <li>수명 그래프는 Yellow 기준의 3배에서 잘라 그립니다. 넘는 막대는 ↑, 손상 0 은 ∞ 로 표시합니다. 정확한 값은 막대에 마우스를 올리거나 아래 표에서 봅니다.</li>
+    <li><b>Worst Scenario</b> 는 전 채널의 시간당 손상 합이 가장 큰 시나리오, <b>Worst Case</b> 는 최소 수명이 가장 짧은 Case 입니다.</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">5. 보고서</h2>
+  <p>최대 응력 분석 · 최소 수명 분석 · 취약 채널 TOP10 · 구조 건전성 평가 · 개선 우선순위 · 종합 결론 여섯 절로 나옵니다. 문장의 숫자는 모두 계산 결과에서 가져오며 AI 가 쓰지 않습니다.</p>
+  <ul>
+    <li><b>보고서 인쇄 · PDF 저장</b> — 인쇄 창에서 「PDF 로 저장」을 고르면 요약 · 그래프 · 보고서가 들어간 PDF 가 됩니다.</li>
+    <li><b>엑셀로 내려받기</b> — 응력 · 손상·수명 · TOP10 · 보고서 4개 시트.</li>
+  </ul>
+  <p>등급과 우선순위는 올린 값과 기준을 그대로 계산한 결과입니다. 재질 · 용접 등급 · 목표 수명에 따른 최종 판단은 담당 엔지니어가 합니다.</p>
+</div>
+
+</div></main>
+<footer><div class="wrap">생성형 AI 업무자동화 전문가과정 2차수 · 프로젝트 16 · 기획 노현석 · 예제 데이터는 실제 계측값이 아닙니다.</div></footer>
+</body>
+</html>

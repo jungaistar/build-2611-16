@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>응력 계측 결과 후처리 대시보드 — Max/Min Stress · Damage · Life</title>
+<meta name="description" content="응력 계측 결과 엑셀(시나리오별 Max/Min Stress · Damage per hour · Case 가중치)을 올리면 응력 · 수명 대시보드, 취약 채널 TOP10, 위험도 평가와 보고서를 만듭니다. 파일은 브라우저 안에서만 처리합니다.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://build-2611-16.jobability.co.kr/">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="생성형 AI 업무자동화 전문가과정 · 2차수">
+<meta property="og:url" content="https://build-2611-16.jobability.co.kr/">
+<meta property="og:title" content="응력 계측 결과 후처리 대시보드 — 생성형 AI 업무자동화 전문가과정 2차수">
+<meta property="og:description" content="계측 엑셀을 올리면 응력 · 수명 대시보드와 취약 채널 TOP10, 위험도 평가 보고서를 만듭니다.">
+<meta property="og:image" content="https://build-2611-16.jobability.co.kr/og-index.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<nav class="topnav" aria-label="주요 메뉴">
+  <div class="topnav-inner">
+    <a class="topnav-brand" href="index.html">응력 계측 후처리 <small>build-2611-16 · 기획 노현석</small></a>
+    <ul class="topnav-links">
+      <li><a href="#s-file">엑셀</a></li>
+      <li><a href="#s-cond">조건</a></li>
+      <li><a href="#s-stress">Stress</a></li>
+      <li><a href="#s-life">Life</a></li>
+      <li><a href="#s-report">보고서</a></li>
+      <li><a href="guide.html">사용법</a></li>
+      <li><a href="plan.html">기획서</a></li>
+    </ul>
+  </div>
+</nav>
+<header class="hero"><div class="wrap">
+  <div class="eyebrow">생성형 AI 업무자동화 전문가과정 · 2차수 · 프로젝트 16</div>
+  <h1>응력 계측 결과 후처리 대시보드</h1>
+  <p>계측 결과 엑셀을 올리면 <b>시나리오별 Max/Min Stress</b>, <b>Case 별 수명</b>, <b>취약 채널 TOP10</b>, <b>위험도 평가</b>를 한 화면에 정리하고 보고서까지 만듭니다.
+     계산식은 엑셀과 같고, 파일에 적힌 값과 다시 계산한 값을 대조해 보여 줍니다.</p>
+</div></header>
+
+<main><div class="wrap">
+
+<section id="s-file" class="card">
+  <h2 style="margin-top:0">1. 계측 결과 엑셀을 올리세요</h2>
+  <p class="sub">시트 이름은 무엇이든 됩니다. 「채널 | 시나리오마다 Max · Min」 표와 「Damage per hour」 표, Case 가중치 · Duration time 을 찾아 읽습니다.</p>
+  <label class="drop" id="drop">
+    <input type="file" id="file" accept=".xlsx,.xls,.xlsm">
+    <b>엑셀 파일을 끌어다 놓거나 눌러서 고르세요</b>
+    <span>파일은 서버로 올라가지 않습니다 · 읽기와 계산은 이 브라우저 안에서만 합니다</span>
+  </label>
+  <div class="btnrow">
+    <button class="btn primary" id="btn-sample">예제로 해보기</button>
+    <button class="btn" id="btn-sample-xlsx">예제 엑셀 내려받기(입력 양식)</button>
+  </div>
+  <p class="sub" style="margin-top:10px">예제 데이터는 실제 계측값이 아닙니다 — 채널 15개 · 시나리오 4개의 가짜 값입니다.</p>
+  <div id="file-status"></div>
+</section>
+
+<section id="s-cond" class="card" hidden>
+  <h2 style="margin-top:0">2. 계산 조건 <small>고치면 바로 다시 계산합니다</small></h2>
+  <div class="form">
+    <label>응력 단위 <input type="text" id="unit" value="MPa"></label>
+    <label>허용 응력(선택 — 넣으면 안전율 계산) <input type="number" id="allow" step="any" min="0" placeholder="예) 355"></label>
+    <label>Red 기준: Life &lt; (hr) <input type="number" id="lim0" step="any" value="20000"></label>
+    <label>Orange 기준: Life &lt; (hr) <input type="number" id="lim1" step="any" value="50000"></label>
+    <label>Yellow 기준: Life &lt; (hr) <input type="number" id="lim2" step="any" value="100000"></label>
+  </div>
+  <div class="tablewrap free" id="cond"></div>
+  <div class="btnrow"><button class="btn sm" id="btn-reset">엑셀 값으로 되돌리기</button></div>
+  <div id="notes"></div>
+</section>
+
+<section id="s-sum" class="card" hidden>
+  <h2 style="margin-top:0">3. 자동 분석 요약</h2>
+  <div class="stats" id="summary"></div>
+</section>
+
+<section id="s-stress" class="card" hidden>
+  <h2 style="margin-top:0">4. Stress Dashboard</h2>
+  <div class="charts">
+    <div><h3>시나리오별 Max Stress</h3><div id="c-max"></div></div>
+    <div><h3>시나리오별 Min Stress</h3><div id="c-min"></div></div>
+    <div><h3>Max / Min 비교 <small>채널마다 전 시나리오의 최대 인장 ~ 최대 압축 범위</small></h3><div id="c-env"></div></div>
+  </div>
+  <div class="cols2">
+    <div><h3>최대 응력 채널 · 최대 압축응력 채널</h3><div id="peak"></div></div>
+    <div><h3>Stress Top10 Ranking <small>절댓값 기준</small></h3><div class="tablewrap free" id="top-stress"></div></div>
+  </div>
+</section>
+
+<section id="s-life" class="card" hidden>
+  <h2 style="margin-top:0">5. Life Dashboard</h2>
+  <div id="life-none"></div>
+  <div id="life-body">
+    <div class="legend" id="grade-legend"></div>
+    <div class="charts"><div id="c-cases" class="charts inner"></div><div><h3>Case 비교 <small>채널별 수명(hr)</small></h3><div id="c-cmp"></div></div></div>
+    <div class="cols2">
+      <div><h3>Worst Channel · Worst Scenario · Worst Case</h3><div id="worst"></div></div>
+      <div><h3>Life Top10 Ranking <small>수명이 짧은 순</small></h3><div class="tablewrap free" id="top-life"></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="s-table" class="card" hidden>
+  <h2 style="margin-top:0">6. 채널별 전체 표</h2>
+  <div class="tablewrap" id="all"></div>
+</section>
+
+<section id="s-report" class="card" hidden>
+  <h2 style="margin-top:0">7. 보고서</h2>
+  <div class="btnrow noprint"><button class="btn green" id="btn-print">보고서 인쇄 · PDF 저장</button><button class="btn" id="btn-export">엑셀로 내려받기</button></div>
+  <div id="report"></div>
+</section>
+
+</div></main>
+<footer><div class="wrap">생성형 AI 업무자동화 전문가과정 2차수 · 프로젝트 16 · 기획 노현석 · 예제 데이터는 실제 계측값이 아닙니다.</div></footer>
+<script src="lib/xlsx.full.min.js"></script>
+<script src="js/stress.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

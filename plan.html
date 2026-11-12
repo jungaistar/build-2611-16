@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>기획서 — 응력 계측 결과 후처리 대시보드</title>
+<meta name="robots" content="index,follow">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css">
+<style>
+.plan-figs figure{margin:0 0 22px;} .plan-figs img{width:100%;height:auto;border:1px solid var(--line);border-radius:10px;background:#fff;}
+.plan-figs figcaption{font-size:13px;color:var(--sub);text-align:center;margin-top:6px;}
+.plan td{white-space:normal;} .plan td .btn{min-height:36px;white-space:nowrap;}
+h3{font-size:15px;margin:16px 0 6px;} main ul{margin:0 0 10px 20px;}
+</style>
+</head>
+<body>
+<nav class="topnav" aria-label="주요 메뉴">
+  <div class="topnav-inner">
+    <a class="topnav-brand" href="index.html">응력 계측 결과 후처리 대시보드 <small>build-2611-16 · 기획 노현석</small></a>
+    <ul class="topnav-links">
+      <li><a href="index.html">도구</a></li>
+      <li><a href="guide.html">사용법</a></li>
+      <li><a href="plan.html" class="active" aria-current="page">기획서</a></li>
+    </ul>
+  </div>
+</nav>
+<header class="hero"><div class="wrap">
+  <div class="eyebrow">생성형 AI 업무자동화 전문가과정 · 2차수 · 프로젝트 16 · 기획서 v1.0</div>
+  <h1>응력 계측 결과 후처리 대시보드 기획서</h1>
+  <p>응력 계측 결과 엑셀(시나리오별 Max/Min Stress · Damage per hour · Case 가중치 · Duration time)을 올리면 응력 · 수명 대시보드와 취약 채널 TOP10, 위험도 평가, 6절 보고서를 만드는 브라우저 도구입니다. 계산식은 엑셀과 같고 파일에 적힌 값과 다시 계산한 값을 대조합니다.</p>
+</div></header>
+<main><div class="wrap">
+<div class="card">
+  <h2 style="margin-top:0">기획서 내려받기</h2>
+  <p class="sub">파이프라인 · 아키텍처 · 와이어프레임 · 개발일지가 들어간 워드 문서입니다. 버전마다 따로 남깁니다.</p>
+  <div class="tablewrap plan"><table><thead><tr><th>버전</th><th>날짜</th><th>바뀐 점</th><th>파일</th></tr></thead><tbody><tr><td><b>v1.0</b></td><td>2026-11-12</td><td>첫 판 — 엑셀 읽기, Stress · Life 대시보드, 자동 분석, 위험도, 6절 보고서 / Case 가중치 · Duration · 기준 · 허용 응력을 화면에서 바꿔 다시 계산 / 파일의 Case Life 와 재계산 검산, 가중치 머리글 순서 · 범례 중복 알림 / 인쇄(PDF) · 엑셀 4시트, 계산 테스트 48 · 화면 테스트 24</td><td><a class="btn primary" href="docs/기획서/build-2611-16_노현석_응력계측결과후처리대시보드_기획서_v1.0.docx" download>워드 내려받기</a></td></tr></tbody></table></div>
+</div>
+<div class="card plan">
+  <h2 style="margin-top:0">요구사항과 구현</h2>
+  <div class="tablewrap"><table><thead><tr><th>기획서 요구</th><th>구현</th></tr></thead><tbody><tr><td>Excel 데이터 자동 분석</td><td>SheetJS 로 시트 전부를 읽어 Max · Min 머리줄 표, Damage per hour 표, Case 가중치, Duration time, 시나리오 범례를 내용으로 찾음. 못 찾은 표는 알리고 그 분석만 뺌</td></tr><tr><td>Stress Dashboard — Max · Min · 비교 그래프</td><td>채널 × 시나리오 묶음 막대(SVG) 2종 + 채널별 최대 인장 ~ 최대 압축 범위 막대</td></tr><tr><td>최대 응력 채널 · 최대 압축응력 채널 · Stress Top10</td><td>채널별 최대 인장 · 최대 압축 · 최대 범위와 시나리오, 절댓값 기준 Top10(인장/압축 구분)</td></tr><tr><td>Life Dashboard — Case1 · Case2 · 비교 그래프</td><td>Case 별 수명 막대(막대 색 = 위험도, 기준 점선) + Case 묶음 막대. Case 수는 2개로 고정하지 않음</td></tr><tr><td>Life Top10 · Worst Channel</td><td>가장 불리한 Case 의 수명이 짧은 순 Top10, Worst Channel 과 그 채널의 시나리오별 손상 기여율</td></tr><tr><td>자동 분석 — Worst Scenario · Worst Case · 위험도</td><td>Worst Scenario = 전 채널 시간당 손상 합 최대, Worst Case = 최소 수명이 가장 짧은 Case, 위험도 = Red/Orange/Yellow/Green</td></tr><tr><td>위험도 평가 기준</td><td>기본 20,000 / 50,000 / 100,000 hr, 화면에서 변경 가능. 손상 0 은 ∞ · Green</td></tr><tr><td>최종 보고서 6절</td><td>최대 응력 분석 · 최소 수명 분석 · 취약 채널 TOP10 · 구조 건전성 평가 · 개선 우선순위 · 종합 결론 — 규칙으로 만든 문장, 중요 수치 굵게, 표 포함</td></tr><tr><td>경영진 보고서 수준 · 그래프 포함</td><td>인쇄(PDF) 때 입력 · 조건 영역을 숨기고 요약 · 그래프 · 보고서만 2단으로 출력, 엑셀 4시트 내려받기</td></tr><tr><td>엑셀값을 넣으면 실행 · 추가 보완</td><td>예제 엑셀(입력 양식) 내려받기, Case 가중치 · Duration · 기준 · 허용 응력을 화면에서 바꿔 다시 계산, 파일 값과 재계산 값 검산</td></tr></tbody></table></div>
+</div>
+<div class="card plan-figs"><h2 style="margin-top:0">그림으로 보기</h2><figure><img src="docs/img/pipeline.png" alt="처리 흐름(파이프라인)" loading="lazy"><figcaption>처리 흐름(파이프라인)</figcaption></figure><figure><img src="docs/img/architecture.png" alt="구성(아키텍처)" loading="lazy"><figcaption>구성(아키텍처)</figcaption></figure><figure><img src="docs/img/wireframe-1.png" alt="와이어프레임 — 입력 · 조건 · 요약" loading="lazy"><figcaption>와이어프레임 — 입력 · 조건 · 요약</figcaption></figure><figure><img src="docs/img/wireframe-2.png" alt="와이어프레임 — 대시보드 · 보고서" loading="lazy"><figcaption>와이어프레임 — 대시보드 · 보고서</figcaption></figure><figure><img src="docs/img/screen.png" alt="실제 화면(예제 데이터)" loading="lazy"><figcaption>실제 화면(예제 데이터)</figcaption></figure></div>
+<div class="card"><h2 style="margin-top:0">개발일지</h2><h3>2026-11-12 · 첫 판</h3><ul><li>애본님 지시로 한신대 메일(11-09 · 11-12)과 패들릿 프롬프트 확인. 아티팩트 링크는 「페이지를 찾을 수 없음」이라 보지 못함</li><li>애본님 확인 뒤 메일의 엑셀(392KB)을 받아 구조와 수식만 확인: 시트 2장, Life = 1/Damage, Case 손상 = Σ 손상 × 가중치, Total damage = 손상 × Duration/3600</li><li>엔진 stress.js → 실제 엑셀로 읽기 · 검산 일치 확인 → 화면 → 테스트</li><li>실제 엑셀에서 가중치 표 머리글 순서(무부하 기본 · 무부하 요철 · 부하 기본 · 부하 요철)와 시나리오 범례 순서가 다르고 시나리오2 · 4 설명이 같은 것을 발견 → 계산은 엑셀대로, 화면에 알림</li><li>계산 테스트 48 · 화면 테스트 24 통과, 엔진을 일부러 깨뜨려 실패하는지 확인</li></ul></div>
+</div></main>
+<footer><div class="wrap">생성형 AI 업무자동화 전문가과정 · 2차수 · 프로젝트 16 · 기획 노현석 · <a href="https://build-2611-00.jobability.co.kr/">2차수 프로젝트 총괄</a></div></footer>
+</body>
+</html>
