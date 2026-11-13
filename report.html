@@ -58,7 +58,7 @@ body{margin:0;font-family:Pretendard,-apple-system,"Apple SD Gothic Neo","Malgun
 <li>과정: 생성형 AI 업무자동화 전문가과정 2차수</li>
 <li>점검일: 2026-11-13 (판 2026-11-13.1 · 도구 v1.1)</li>
 <li>사이트: <a href="https://build-2611-16.jobability.co.kr/">https://build-2611-16.jobability.co.kr/</a></li>
-<li>리포지토리: <a href="https://github.com/jungaistar/build-2611-16">https://github.com/jungaistar/build-2611-16</a></li>
+<li>소스: 비공개 리포지토리 jungaistar/build-2611-16 (화면 · 문서 파일은 사이트 주소에서 그대로 열립니다)</li>
 </ul>
 </section><section class="card"><h2>1. 종합</h2>
 <p><b>사이트 · 인계 자료 준비 완료</b></p>
@@ -72,7 +72,7 @@ body{margin:0;font-family:Pretendard,-apple-system,"Apple SD Gothic Neo","Malgun
 <div class="tablewrap"><table><thead><tr><th>기능</th><th>내용</th></tr></thead><tbody><tr><td>엑셀 읽기</td><td>표를 위치가 아니라 내용(머리글)으로 찾아 채널 · 시나리오 수가 달라도 읽습니다.</td></tr><tr><td>계산 조건</td><td>Case 가중치 · Duration time · 위험도 기준 · 허용 응력을 바꾸면 바로 다시 계산합니다.</td></tr><tr><td>Stress Dashboard</td><td>시나리오별 Max · Min, 범위 비교, 최대 응력 채널, Top10.</td></tr><tr><td>Life Dashboard</td><td>Case 별 수명과 비교, Top10, Worst Channel · Scenario · Case.</td></tr><tr><td>검산 · 알림</td><td>파일의 Case Life 와 재계산 대조, 가중치 합 · 가중치 머리글 순서 · 범례 중복 · Max/Min 뒤바뀜 알림.</td></tr><tr><td>보고서</td><td>6절 보고서, 인쇄(PDF) · 엑셀.</td></tr></tbody></table></div>
 <div class="tablewrap"><table><thead><tr><th>시험 파일</th><th>통과</th><th>결과</th></tr></thead><tbody><tr><td>logic.test.js</td><td>59개</td><td>통과</td></tr><tr><td>smoke.browser.js</td><td>47개</td><td>통과</td></tr></tbody></table></div>
 </section><section class="card"><h2>4. 인계 준비</h2>
-<div class="tablewrap"><table><thead><tr><th>항목</th><th>결과</th><th>근거</th></tr></thead><tbody><tr><td>시험(계산 규칙 · 화면)</td><td class="st ok">충족</td><td>logic.test.js 59개 · smoke.browser.js 47개</td></tr><tr><td>Supabase 설정 파일</td><td class="st ok">충족</td><td>auth.sql · board.sql · site.sql · verify.sql</td></tr><tr><td>Supabase 연결 안내</td><td class="st ok">충족</td><td>supabase/README.md</td></tr><tr><td>내 깃허브로 옮기기 안내</td><td class="st ok">충족</td><td>docs/내_깃허브로_옮기기.md</td></tr><tr><td>기획서(워드 · 웹) · 개발일지</td><td class="st ok">충족</td><td>판 이력 2건 · 개발일지 3편 · 커밋 4개</td></tr><tr><td>리포지토리(소스 전체)</td><td class="st ok">충족</td><td>github.com/jungaistar/build-2611-16</td></tr><tr><td>게시판 · 새 글 알림 · 첫 화면 고르기</td><td class="st ok">충족</td><td>과정용 프로젝트에 SQL 적용(접두사 build261116_, 표 7 · 함수 11 · 정책 15)</td></tr></tbody></table></div>
+<div class="tablewrap"><table><thead><tr><th>항목</th><th>결과</th><th>근거</th></tr></thead><tbody><tr><td>시험(계산 규칙 · 화면)</td><td class="st ok">충족</td><td>logic.test.js 59개 · smoke.browser.js 47개</td></tr><tr><td>Supabase 설정 파일</td><td class="st ok">충족</td><td>auth.sql · board.sql · site.sql · verify.sql</td></tr><tr><td>Supabase 연결 안내</td><td class="st ok">충족</td><td>supabase/README.md</td></tr><tr><td>내 깃허브로 옮기기 안내</td><td class="st ok">충족</td><td>docs/내_깃허브로_옮기기.md</td></tr><tr><td>기획서(워드 · 웹) · 개발일지</td><td class="st ok">충족</td><td>판 이력 2건 · 개발일지 3편 · 커밋 4개</td></tr><tr><td>리포지토리(소스 전체)</td><td class="st ok">충족</td><td>jungaistar/build-2611-16 · 비공개(개발 자료 전체 포함)</td></tr><tr><td>게시판 · 새 글 알림 · 첫 화면 고르기</td><td class="st ok">충족</td><td>과정용 프로젝트에 SQL 적용(접두사 build261116_, 표 7 · 함수 11 · 정책 15)</td></tr></tbody></table></div>
 </section><section class="card"><h2>5. 판 이력</h2>
 <ul>
 <li>v1.1 (2026-11-13) — 기획자 추가 요청(패들릿 2026-11-12 PPT 3쪽) 반영; Stress Dashboard — 시나리오 Show/Hide, 한 그래프에 겹쳐 비교 ↔ 시나리오마다 따로, 창마다 채널 선택 · 한 화면 채널 수 · 쪽 넘기기, 막대 위 값 표시(정수 · 소수점 1 · 2자리), 막대 ↔ 꺾은선, 그래프는 한 줄에 하나씩 크게. Max/Min 비교의 인장 빨강 · 압축 파랑은 유지; Life Dashboard — Case 별 · 시나리오별 수명 평가, Case</li>
