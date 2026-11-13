@@ -80,5 +80,20 @@ ok(sr.verify.diff.length === 0 && sr.verify.compared > 20 && sr.notes.length ===
 ok(sr.count.red >= 1 && sr.count.green >= 3 && sr.rows.filter(function (x) { return x.minLife === Infinity; }).length === 2, '예제: 등급이 고루 나오고 손상 0 채널 2개');
 var before = JSON.stringify(sm); S.analyze(sm, { allow: 300 }); ok(JSON.stringify(sm) === before, '계산이 입력을 바꾸지 않는다');
 
+// ---------- v1.1 그래프 보기 도우미 ----------
+eq([S.fmtLabel(1234.567, 'int'), S.fmtLabel(1234.567, 'd1'), S.fmtLabel(-12.3, 'd2'), S.fmtLabel(300000, 'life'), S.fmtLabel(Infinity, 'life'), S.fmtLabel(null, 'int'), S.fmtLabel(0.000146, 'exp'), S.fmtLabel(0, 'exp')],
+  ['1,235', '1,234.6', '-12.30', '300,000', '∞', '', '1.46e-4', '0'], '막대 위 숫자 형식(정수 · 소수 1 · 2자리 · 수명은 300,000 처럼)');
+var PR = [{ name: 'Ch1', v: 50 }, { name: 'Ch2', v: 10 }, { name: 'Ch10', v: null }, { name: 'Ch3', v: 30 }, { name: 'Ch4', v: 20 }], kv = function (r) { return r.v; }, nm = function (a) { return a.map(function (r) { return r.name; }); };
+eq(nm(S.pickChannels(PR, {})), ['Ch1', 'Ch2', 'Ch10', 'Ch3', 'Ch4'], '조건이 없으면 원래 순서 그대로');
+eq(nm(S.pickChannels(PR, { q: 'ch1' })), ['Ch1', 'Ch10'], '채널 검색(대소문자 무시)');
+eq(nm(S.pickChannels(PR, { sel: ['Ch3', 'Ch2'] })), ['Ch2', 'Ch3'], '고른 채널만(원래 순서)');
+eq(nm(S.pickChannels(PR, { key: kv, topN: 2, worst: 'low' })), ['Ch2', 'Ch4'], 'Top N — 값이 작은 쪽(수명), 표시는 원래 순서');
+eq(nm(S.pickChannels(PR, { key: kv, topN: 2, worst: 'high' })), ['Ch1', 'Ch3'], 'Top N — 값이 큰 쪽(손상)');
+eq(nm(S.pickChannels(PR, { key: kv, sort: 'asc' })), ['Ch2', 'Ch4', 'Ch3', 'Ch1', 'Ch10'], '오름차순 — 값 없는 채널은 뒤로');
+eq(nm(S.pickChannels(PR, { key: kv, sort: 'desc' })), ['Ch1', 'Ch3', 'Ch4', 'Ch2', 'Ch10'], '내림차순 — 값 없는 채널은 뒤로');
+eq(nm(S.pickChannels(PR, { key: kv, topN: 3, worst: 'low', sort: 'desc' })), ['Ch3', 'Ch4', 'Ch2'], 'Top N 뒤에 정렬');
+var pgn = S.paginate([1, 2, 3, 4, 5, 6, 7], 3, 2); eq([pgn.items, pgn.pages, pgn.page], [[7], 3, 2], '쪽 나누기 — 마지막 쪽');
+eq([S.paginate([1, 2, 3], 3, 9).page, S.paginate([1, 2, 3], 0, 0).items.length, S.paginate([], 5, 0).pages], [0, 3, 1], '쪽 번호는 범위 안으로 · 0 이면 전부 · 빈 목록도 1쪽');
+
 console.log('계산 규칙 테스트: 통과 ' + passed + ' · 실패 ' + failed);
 process.exit(failed ? 1 : 0);

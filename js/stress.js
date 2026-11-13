@@ -298,7 +298,7 @@
   /* ───────────── 엑셀 내려받기 ───────────── */
   function exportSheets(res, meta) {
     var U = (meta && meta.unit) || 'MPa', S = res.scenarios, C = res.cases, x = function (v) { return v == null ? '' : !isFinite(v) ? '∞' : v; };
-    var a = [['채널'].concat([].concat.apply([], S.map(function (s) { return [s.name + ' Max', s.name + ' Min', s.name + ' 범위']; }))).concat(['최대 인장(' + U + ')', '최대 압축(' + U + ')', '최대 범위', '절댓값 최대', '구분'].concat(res.allow ? ['안전율'] : []))];
+    var a = [['채널'].concat([].concat.apply([], S.map(function (s) { return [s.name + ' Max', s.name + ' Min', s.name + ' Stress range']; }))).concat(['최대 인장(' + U + ')', '최대 압축(' + U + ')', '최대 범위', '절댓값 최대', '구분'].concat(res.allow ? ['안전율'] : []))];
     res.rows.forEach(function (r) { a.push([r.name].concat([].concat.apply([], S.map(function (_, i) { return [x(r.max[i]), x(r.min[i]), x(r.range[i])]; }))).concat([x(r.peakMax), x(r.peakMin), x(r.peakRange), x(r.peakAbs), r.peakAbsSign].concat(res.allow ? [x(r.sf)] : []))); });
     var b = [['채널'].concat(S.map(function (s) { return s.name + ' Damage/hr'; })).concat(S.map(function (s) { return s.name + ' Life(hr)'; })).concat(S.map(function (s) { return s.name + ' Total damage'; })).concat(C.map(function (c) { return c.name + ' Damage/hr'; })).concat(C.map(function (c) { return c.name + ' Life(hr)'; })).concat(['최소 수명(hr)', '기준 Case', '위험도'])];
     res.rows.forEach(function (r) { b.push([r.name].concat(r.dmg.map(x)).concat(r.life.map(x)).concat(r.total.map(x)).concat(r.caseDmg.map(x)).concat(r.caseLife.map(x)).concat([x(r.minLife), r.minLifeCase >= 0 ? C[r.minLifeCase].name : '', r.grade ? r.grade.label : ''])); });
@@ -355,8 +355,37 @@
     return { names: ['MaxMin stress', 'Damage per hour'], sheets: { 'MaxMin stress': s1, 'Damage per hour': s2 }, merges: { 'MaxMin stress': scen.map(function (_, i) { return { s: { r: 8, c: 2 + 2 * i }, e: { r: 8, c: 3 + 2 * i } }; }), 'Damage per hour': [{ s: { r: 12, c: 2 }, e: { r: 12, c: 5 } }, { s: { r: 12, c: 6 }, e: { r: 12, c: 9 } }, { s: { r: 8, c: 14 }, e: { r: 8, c: 15 } }, { s: { r: 8, c: 16 }, e: { r: 8, c: 17 } }] } };
   }
 
+  /* ---------- v1.1 그래프 보기 도우미(화면이 쓰는 순수 함수) ---------- */
+  /** 막대 위 숫자. mode: 'int' | 'd1' | 'd2' | 'life'(천 단위 쉼표 정수) | 'exp'(지수 2자리). 없음 → '', 무한 → '∞' */
+  function fmtLabel(v, mode) {
+    if (v == null || (typeof v === 'number' && isNaN(v))) return '';
+    if (!isFinite(v)) return '∞';
+    if (mode === 'exp') return v === 0 ? '0' : v.toExponential(2);
+    var d = mode === 'd1' ? 1 : mode === 'd2' ? 2 : 0;
+    return v.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+  }
+  /** 채널 고르기. opt: { sel:[이름]|null, q:검색어, key:function(row)→값|null, worst:'low'|'high', topN, sort:'none'|'asc'|'desc' }
+   *  topN 은 key 가 나쁜 쪽(worst) N개. sort 가 none 이면 원래 채널 순서를 지킨다. key 가 없는 채널은 정렬에서 뒤로. */
+  function pickChannels(rows, opt) {
+    opt = opt || {};
+    var q = low(opt.q), out = rows.filter(function (r) { return (!opt.sel || opt.sel.indexOf(r.name) >= 0) && (!q || low(r.name).indexOf(q) >= 0); });
+    var key = opt.key, cmp = function (dir) { return function (a, b) { var x = key(a), y = key(b); if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1; return x === y ? 0 : (x < y ? -dir : dir); }; };
+    if (key && opt.topN > 0) {
+      var keep = out.filter(function (r) { return key(r) != null; }).slice().sort(cmp(opt.worst === 'high' ? -1 : 1)).slice(0, opt.topN);
+      out = out.filter(function (r) { return keep.indexOf(r) >= 0; });
+    }
+    if (key && (opt.sort === 'asc' || opt.sort === 'desc')) out = out.slice().sort(cmp(opt.sort === 'asc' ? 1 : -1));
+    return out;
+  }
+  /** 쪽 나누기. per 가 0 이하면 한 쪽에 전부. page 는 범위 안으로 맞춘다. */
+  function paginate(list, per, page) {
+    per = Math.floor(per) > 0 ? Math.floor(per) : (list.length || 1);
+    var pages = Math.max(1, Math.ceil(list.length / per)); page = Math.min(Math.max(0, page | 0), pages - 1);
+    return { items: list.slice(page * per, page * per + per), pages: pages, page: page, per: per, total: list.length };
+  }
+
   return {
     DEF_LIMITS: DEF_LIMITS, GRADES: GRADES, num: num, parseBook: parseBook, findStress: findStress, findBlock: findBlock, findCases: findCases,
-    analyze: analyze, gradeOf: gradeOf, report: report, exportSheets: exportSheets, sampleBook: sampleBook, f0: f0, f1: f1
+    analyze: analyze, gradeOf: gradeOf, report: report, exportSheets: exportSheets, sampleBook: sampleBook, f0: f0, f1: f1, fmtLabel: fmtLabel, pickChannels: pickChannels, paginate: paginate
   };
 });

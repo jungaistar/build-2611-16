@@ -26,9 +26,66 @@ srv.listen(0, async function () {
     ok(await count(pg, '#c-max svg rect.bar') === 60 && await count(pg, '#c-min svg rect.bar') === 60, 'Max · Min 그래프(15채널 × 4시나리오)');
     ok(await count(pg, '#c-env svg rect') === 30, 'Max/Min 비교(채널마다 인장 · 압축 막대)');
     ok(await count(pg, '#top-stress tr') === 11 && await count(pg, '#top-life tr') === 11, 'Stress · Life Top10');
-    ok(await count(pg, '#c-cases svg') === 2 && await count(pg, '#c-cases svg line.lim') >= 4 && await count(pg, '#c-cmp svg rect.bar') === 30, 'Case 별 수명 그래프(기준선) · Case 비교');
+    ok(await count(pg, '#c-cases svg') === 2 && await count(pg, '#c-cases svg line.lim') >= 4 && await count(pg, '#c-cases svg rect.bar') === 30, 'Case 별 수명 그래프(기준선) — Case 마다 한 장');
     ok(/∞/.test(await pg.textContent('#c-cases')) && /Worst Scenario/.test(await pg.textContent('#worst')), '손상 0 채널은 ∞, Worst 정리');
-    ok(await count(pg, '#all tr') === 16 && await count(pg, '#report h3') === 6, '전체 표 · 보고서 6절');
+    ok(await count(pg, '#all-stress tr') === 17 && await count(pg, '#all-life tr') === 16 && await count(pg, '#report h3') === 6, '전체 표 · 보고서 6절');
+    // ---------- v1.1 그래프 창 ----------
+    var sel = function (id, k, v) { return pg.selectOption('#ctl-' + id + ' select[data-k="' + k + '"]', v); };
+    ok(await count(pg, '#all-stress tr:first-child th.grp') === 4 && /Stress range/.test(await pg.textContent('#all-stress')) && !/최대 범위/.test(await pg.textContent('#s-table')), '(v1.1) 표 — 시나리오 이름이 한 줄 위, 「Stress range」');
+    ok(await count(pg, '#all-dmg tr') === 17 && (await pg.$$eval('#all-life td', function (a) { return a.filter(function (x) { return /Damage 0 \(검증 필요\)/.test(x.textContent); }).length; })) === 2, '(v1.1) 손상 표 · 수명 표를 따로, 손상 0 채널은 「검증 필요」');
+    ok(await pg.$$eval('#win-st svg.big, #win-lf svg.big, #win-dm svg.big', function (a) { var w = a[0].getBoundingClientRect().width; return a.length >= 7 && a.every(function (x) { return Math.abs(x.getBoundingClientRect().width - w) < 2 && x.getBoundingClientRect().left === a[0].getBoundingClientRect().left; }); }), '(v1.1) 그래프는 한 줄에 하나씩 크게');
+    await pg.uncheck('#ctl-st input[data-k="hide"][data-i="1"]');
+    ok(await count(pg, '#c-max rect.bar') === 45 && await count(pg, '#c-env svg rect') === 30, '(v1.1) 시나리오 숨기기 — Max 45개, Max/Min 비교는 그대로');
+    await sel('st', 'mode', 'split');
+    ok(await count(pg, '#c-max svg') === 3 && await count(pg, '#c-min svg') === 3 && await count(pg, '#c-max rect.bar') === 45, '(v1.1) 시나리오마다 따로 — 켜 둔 3개만');
+    await pg.check('#ctl-st input[data-k="hide"][data-i="1"]'); await sel('st', 'mode', 'combined');
+    ok(await count(pg, '#c-max text.lbl') === 0, '(v1.1) 값 표시는 처음엔 꺼져 있다');
+    await sel('st', 'label', 'd2');
+    var lb = await pg.$$eval('#c-max text.lbl', function (a) { return a.map(function (x) { return x.textContent; }); });
+    ok(lb.length === 60 && lb.every(function (t) { return /^-?[\d,]+\.\d\d$/.test(t); }), '(v1.1) 값 표시 소수점 2자리', lb.slice(0, 3).join(' '));
+    await sel('st', 'label', 'int');
+    ok((await pg.$$eval('#c-max text.lbl', function (a) { return a.every(function (x) { return /^-?[\d,]+$/.test(x.textContent); }); })) && await count(pg, '#c-env text.lbl') === 30, '(v1.1) 값 표시 정수 · Max/Min 비교에도');
+    await sel('st', 'type', 'line');
+    ok(await count(pg, '#c-max polyline') === 4 && await count(pg, '#c-max circle') === 60 && await count(pg, '#c-max rect.bar') === 0, '(v1.1) 꺾은선 그래프');
+    await sel('st', 'type', 'bar'); await sel('st', 'label', 'off');
+    await pg.fill('#ctl-st input[data-k="per"]', '6'); await pg.dispatchEvent('#ctl-st input[data-k="per"]', 'change');
+    ok(await count(pg, '#c-max rect.bar') === 24 && /1 \/ 3 쪽/.test(await pg.textContent('#win-st .pager')), '(v1.1) 한 화면 채널 수 6 → 3쪽');
+    await pg.click('#win-st .pager [data-act="next"]'); await pg.click('#win-st .pager [data-act="next"]');
+    ok(await count(pg, '#c-max rect.bar') === 12 && /3 \/ 3 쪽/.test(await pg.textContent('#win-st .pager')) && await pg.isDisabled('#win-st .pager [data-act="next"]'), '(v1.1) 쪽 넘기기 — 마지막 쪽은 3채널');
+    await pg.fill('#ctl-st input[data-k="per"]', '15'); await pg.dispatchEvent('#ctl-st input[data-k="per"]', 'change');
+    await pg.fill('#ctl-st input[data-k="q"]', 'ch1');
+    ok(await count(pg, '#c-max rect.bar') === 28 && await pg.evaluate(function () { return document.activeElement && document.activeElement.dataset.k === 'q'; }), '(v1.1) 채널 검색 — Ch1 · Ch10~15, 입력 칸은 그대로');
+    await pg.fill('#ctl-st input[data-k="q"]', '');
+    await pg.click('#ctl-st .chpick summary'); await pg.uncheck('#ctl-st input[data-k="sel"][value="Ch2"]');
+    ok(await count(pg, '#c-max rect.bar') === 56 && /14 \/ 15개/.test(await pg.textContent('#ctl-st .chpick summary')) && await pg.isVisible('#ctl-st .chlist'), '(v1.1) 채널 선택 — 하나 빼면 14개, 목록은 열린 채');
+    await pg.click('#ctl-st .chpick [data-act="all"]');
+    ok(await count(pg, '#c-max rect.bar') === 60, '(v1.1) 전체 선택');
+    // Life
+    await sel('lf', 'top', '5'); await sel('lf', 'sort', 'asc'); await sel('lf', 'label', 'on');
+    var lf = await pg.$$eval('#c-cases .win:nth-child(2) text.lbl', function (a) { return a.map(function (x) { return +x.textContent.replace(/,/g, ''); }); });
+    var top5 = await pg.$$eval('#top-life tr td:nth-child(2)', function (a) { return a.slice(0, 5).map(function (x) { return x.textContent; }).sort().join(); });
+    var cats5 = await pg.$$eval('#c-cases .win:nth-child(1) rect.bar', function (a) { return a.map(function (x) { return x.dataset.ch; }).sort().join(); });
+    ok(lf.length === 5 && lf.every(function (v, i) { return !i || lf[i - 1] <= v; }) && cats5 === top5, '(v1.1) Life Top 5 · 오름차순 · 숫자는 15,891 처럼', JSON.stringify(lf));
+    await sel('lf', 'top', '0'); await sel('lf', 'sort', 'none'); await sel('lf', 'label', 'off');
+    await sel('lf', 'scale', 'log');
+    ok(/\(로그\)/.test(await pg.textContent('#c-cases')) && (await pg.$$eval('#c-cases .win:first-child text.ax', function (a) { return a.some(function (x) { return x.textContent === '100,000'; }); })), '(v1.1) 로그 축 — 눈금은 100,000 처럼');
+    await sel('lf', 'scale', 'lin'); await sel('lf', 'by', 'scen');
+    ok(await count(pg, '#c-cases svg') === 4 && /시나리오별 수명/.test(await pg.textContent('#c-cases')) && await count(pg, '#ctl-lf input[data-k="hide"]') === 4, '(v1.1) 시나리오별 수명 평가');
+    await sel('lf', 'mode', 'combined');
+    ok(await count(pg, '#c-cases svg') === 1 && await count(pg, '#c-cases rect.bar') === 60, '(v1.1) 시나리오를 한 그래프에 겹쳐 비교');
+    await sel('lf', 'by', 'case'); await sel('lf', 'mode', 'split');
+    var tipTxt = await pg.$eval('#c-cases rect.bar[data-ch="Ch1"] title', function (x) { return x.textContent; });
+    ok(/Channel: Ch1/.test(tipTxt) && /Case: Case1/.test(tipTxt) && /Life: [\d,]+ hr/.test(tipTxt) && /Damage: /.test(tipTxt) && /Scenario 기여/.test(tipTxt), '(v1.1) 막대에 올리면 Channel · Case · Life · Damage · Scenario', tipTxt.replace(/\n/g, ' / '));
+    // Damage
+    ok(await count(pg, '#c-dmg svg') === 2 && /\(로그\)/.test(await pg.textContent('#c-dmg')) && await pg.isVisible('#s-dmg'), '(v1.1) Damage Dashboard — Case 마다 한 장, 처음엔 로그 축');
+    await sel('dm', 'by', 'scen'); await sel('dm', 'mode', 'combined'); await sel('dm', 'top', '5');
+    ok(await count(pg, '#c-dmg svg') === 1 && await pg.$$eval('#c-dmg text.ax', function (a) { return a.filter(function (x) { return /^Ch/.test(x.textContent); }).length; }) === 5, '(v1.1) Damage — 시나리오별 · Top 5');
+    await sel('dm', 'by', 'case'); await sel('dm', 'mode', 'split'); await sel('dm', 'top', '0');
+    // 채널을 누르면 Stress 로
+    await pg.click('#c-cases rect.bar[data-ch="Ch7"]');
+    ok(/Ch7/.test(await pg.textContent('#ctl-st .linked')) && await count(pg, '#c-max rect.bar') === 4 && await count(pg, '#c-env svg rect') === 2, '(v1.1) Life 막대를 누르면 Stress Dashboard 가 그 채널만');
+    await pg.click('#ctl-st .linked [data-act="all"]');
+    ok(await count(pg, '#c-max rect.bar') === 60 && await count(pg, '#ctl-st .linked') === 0, '(v1.1) 전체 채널 보기로 되돌리기');
     var rep0 = await pg.textContent('#report');
     ok(/최대 인장 응력은/.test(rep0) && /개선 우선순위/.test(rep0) && !/\*\*/.test(rep0), '보고서 문장(굵은 글씨로 바뀜)');
     // 조건 고치기
@@ -46,7 +103,7 @@ srv.listen(0, async function () {
     // 내려받은 예제를 다시 올린다(파일 경로 전체 확인)
     var d1 = await Promise.all([pg.waitForEvent('download'), pg.click('#btn-sample-xlsx')]); var f1 = path.join(tmp, 'sample.xlsx'); await d1[0].saveAs(f1);
     await pg.setInputFiles('#file', f1); await pg.waitForFunction(function () { return /sample\.xlsx/.test(document.querySelector('#load-ok').textContent); });
-    ok(/모두 같습니다/.test(await pg.textContent('#verify')) && await count(pg, '#all tr') === 16, '내려받은 예제 엑셀을 다시 올려도 같은 결과');
+    ok(/모두 같습니다/.test(await pg.textContent('#verify')) && await count(pg, '#all-stress tr') === 17 && await count(pg, '#all-life tr') === 16, '내려받은 예제 엑셀을 다시 올려도 같은 결과');
     var d2 = await Promise.all([pg.waitForEvent('download'), pg.click('#btn-export')]); var f2 = path.join(tmp, 'out.xlsx'); await d2[0].saveAs(f2);
     ok(XLSX.read(fs.readFileSync(f2), { type: 'buffer' }).SheetNames.join() === '응력,손상·수명,TOP10,보고서', '결과 엑셀 4시트');
     // 응력 표만 있는 파일 · 표가 없는 파일

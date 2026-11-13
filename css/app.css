@@ -41,3 +41,22 @@ td.up{color:var(--danger);} td.down{color:#154b6e;}
 
 section{scroll-margin-top:70px;}
 .charts.inner{display:contents;}
+
+/* v1.1 — 그래프 창: 한 줄에 하나씩 크게, 창마다 보기 조건 */
+.wins{display:block;} .win{margin:0 0 6px; min-width:0;}
+svg.big{width:100%; height:auto; display:block; background:#fff; border:1px solid var(--line); border-radius:10px;}
+svg .pick{cursor:pointer;} svg .pick:hover{stroke:#152232; stroke-width:1.5;}
+.panelctl{background:#f3f6f9; border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin:6px 0 10px;}
+.ctl{display:grid; grid-template-columns:repeat(auto-fill,minmax(min(170px,100%),1fr)); gap:8px 12px; align-items:end;}
+.ctl label{display:flex; flex-direction:column; gap:3px; font-size:12.5px; color:var(--sub); min-width:0;}
+.ctl select{font:inherit; font-size:14px; padding:6px 8px; border:1px solid var(--line); border-radius:7px; background:#fff; color:var(--ink); min-width:0; width:100%;}
+.togs{display:flex; flex-wrap:wrap; gap:6px 16px; align-items:center; font-size:13.5px; margin-top:10px;} .togs b{font-size:12.5px; color:var(--sub); font-weight:600;}
+label.chk{display:inline-flex; gap:6px; align-items:center; font-size:13.5px; color:var(--ink); cursor:pointer;} label.chk input{width:auto; margin:0;}
+.chpick{margin-top:10px; font-size:13.5px;} .chpick summary{cursor:pointer; font-weight:650;} .chpick summary small{font-weight:400; color:var(--sub); margin-left:6px;}
+.chlist{display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:4px 10px; margin-top:8px; max-height:200px; overflow:auto;}
+.chpick .btnrow{margin:8px 0 0;}
+.pager{display:flex; flex-wrap:wrap; gap:10px; align-items:center; font-size:13px; color:var(--sub); margin:8px 0;}
+.linked{margin:0 0 10px;} .nochart{padding:18px 0;}
+th.grp{text-align:center; border-bottom:1px solid var(--line);} th.grp small{display:block; font-weight:400; font-size:11.5px; color:var(--sub);}
+#all-stress th,#all-dmg th,#all-life th{white-space:nowrap;}
+@media print{ .wins .pager{display:none !important;} }
