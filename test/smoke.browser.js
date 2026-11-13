@@ -34,9 +34,16 @@ srv.listen(0, async function () {
     ok(await count(pg, '#all-stress tr:first-child th.grp') === 4 && /Stress range/.test(await pg.textContent('#all-stress')) && !/최대 범위/.test(await pg.textContent('#s-table')), '(v1.1) 표 — 시나리오 이름이 한 줄 위, 「Stress range」');
     ok(await count(pg, '#all-dmg tr') === 17 && (await pg.$$eval('#all-life td', function (a) { return a.filter(function (x) { return /Damage 0 \(검증 필요\)/.test(x.textContent); }).length; })) === 2, '(v1.1) 손상 표 · 수명 표를 따로, 손상 0 채널은 「검증 필요」');
     ok(await pg.$$eval('#win-st svg.big, #win-lf svg.big, #win-dm svg.big', function (a) { var w = a[0].getBoundingClientRect().width; return a.length >= 7 && a.every(function (x) { return Math.abs(x.getBoundingClientRect().width - w) < 2 && x.getBoundingClientRect().left === a[0].getBoundingClientRect().left; }); }), '(v1.1) 그래프는 한 줄에 하나씩 크게');
+    // v1.2 — Min ~ Max 를 한 창에
+    ok(await count(pg, '#c-mm svg') === 1 && await count(pg, '#c-mm rect.bar') === 60, '(v1.2) 겹쳐 보기 — 모든 시나리오의 Min ~ Max 를 한 창에(15채널 × 4)');
+    var mmTip = await pg.$eval('#c-mm rect.bar title', function (x) { return x.textContent; });
+    ok(/Max Stress: /.test(mmTip) && /Min Stress: -/.test(mmTip), '(v1.2) Min ~ Max 막대에 올리면 두 값', mmTip.replace(/\n/g, ' / '));
+    var mmGeo = await pg.evaluate(function () { var r = document.querySelector('#c-mm rect.bar'), z = document.querySelector('#c-mm line.zero'); var y = +r.getAttribute('y'), h = +r.getAttribute('height'), zy = +z.getAttribute('y1'); return y < zy && y + h > zy; });
+    ok(mmGeo, '(v1.2) 막대가 0 선을 가로질러 Min 에서 Max 까지');
     await pg.uncheck('#ctl-st input[data-k="hide"][data-i="1"]');
     ok(await count(pg, '#c-max rect.bar') === 45 && await count(pg, '#c-env svg rect') === 30, '(v1.1) 시나리오 숨기기 — Max 45개, Max/Min 비교는 그대로');
     await sel('st', 'mode', 'split');
+    ok(await count(pg, '#c-mm svg') === 3 && await count(pg, '#c-mm rect.bar') === 45, '(v1.2) 시나리오마다 따로 — Min ~ Max 창도 시나리오마다');
     ok(await count(pg, '#c-max svg') === 3 && await count(pg, '#c-min svg') === 3 && await count(pg, '#c-max rect.bar') === 45, '(v1.1) 시나리오마다 따로 — 켜 둔 3개만');
     await pg.check('#ctl-st input[data-k="hide"][data-i="1"]'); await sel('st', 'mode', 'combined');
     ok(await count(pg, '#c-max text.lbl') === 0, '(v1.1) 값 표시는 처음엔 꺼져 있다');
@@ -47,6 +54,8 @@ srv.listen(0, async function () {
     ok((await pg.$$eval('#c-max text.lbl', function (a) { return a.every(function (x) { return /^-?[\d,]+$/.test(x.textContent); }); })) && await count(pg, '#c-env text.lbl') === 30, '(v1.1) 값 표시 정수 · Max/Min 비교에도');
     await sel('st', 'type', 'line');
     ok(await count(pg, '#c-max polyline') === 4 && await count(pg, '#c-max circle') === 60 && await count(pg, '#c-max rect.bar') === 0, '(v1.1) 꺾은선 그래프');
+    ok(await count(pg, '#c-mm rect.bar') === 60 && await count(pg, '#c-mm polyline') === 0, '(v1.2) Min ~ Max 창은 꺾은선을 골라도 막대');
+    await sel('st', 'label', 'd1'); ok(await count(pg, '#c-mm text.lbl') === 120, '(v1.2) Min ~ Max 창 값 표시 — 위 Max · 아래 Min');
     await sel('st', 'type', 'bar'); await sel('st', 'label', 'off');
     await pg.fill('#ctl-st input[data-k="per"]', '6'); await pg.dispatchEvent('#ctl-st input[data-k="per"]', 'change');
     ok(await count(pg, '#c-max rect.bar') === 24 && /1 \/ 3 쪽/.test(await pg.textContent('#win-st .pager')), '(v1.1) 한 화면 채널 수 6 → 3쪽');
@@ -99,6 +108,8 @@ srv.listen(0, async function () {
     ok(await pg.textContent('#summary') !== sum0 && /Red 0/.test(await pg.textContent('#summary')), '위험도 기준을 바꾸면 등급이 바뀐다');
     await pg.fill('#lim0', '20000'); await pg.dispatchEvent('#lim0', 'change');
     await pg.fill('#allow', '250'); await pg.dispatchEvent('#allow', 'change');
+    var al = await pg.evaluate(function () { var t = function (q) { return [].map.call(document.querySelectorAll(q + ' line.lim'), function (l) { return l.nextSibling.textContent; }).join('|'); }; return [t('#c-max'), t('#c-min'), t('#c-mm')]; });
+    ok(al[0] === '허용 +250' && al[1] === '허용 −250' && al[2] === '허용 +250|허용 −250', '(v1.2) 허용 응력 선 — Max 창 +, Min(압축) 창 −, Min ~ Max 창 둘 다', JSON.stringify(al));
     ok(/안전율/.test(await pg.textContent('#top-stress')) && /허용 응력을 넘습니다/.test(await pg.textContent('#report')), '허용 응력 → 안전율 · 초과 알림');
     // 내려받은 예제를 다시 올린다(파일 경로 전체 확인)
     var d1 = await Promise.all([pg.waitForEvent('download'), pg.click('#btn-sample-xlsx')]); var f1 = path.join(tmp, 'sample.xlsx'); await d1[0].saveAs(f1);

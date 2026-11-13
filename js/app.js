@@ -56,8 +56,8 @@
    * series:[{name,color,vals}], opt:{type,label(fn v→글자),log,cap,lines,colorOf(si,ci),yLabel,tip(si,ci),axFmt,pick} */
   function chart(cats, series, opt) {
     opt = opt || {};
-    var lab = opt.label, W = 1100, H = 380, L = 78, R = 16, T = lab ? 70 : 20, B = 54, all = [];
-    series.forEach(function (s) { s.vals.forEach(function (v) { if (v != null && isFinite(v) && (!opt.log || v > 0)) all.push(v); }); });
+    var lab = opt.label, W = 1100, H = opt.tall ? 440 : 380, L = 78, R = 16, T = lab ? 70 : 20, B = opt.tall && lab ? 96 : 54, all = [];
+    series.forEach(function (s) { s.vals.forEach(function (v) { if (v != null && isFinite(v) && (!opt.log || v > 0)) all.push(v); }); (s.lows || []).forEach(function (v) { if (v != null && isFinite(v)) all.push(v); }); });
     if (!cats.length || !series.length) return '<p class="sub nochart">표시할 채널 · 항목이 없습니다. 위에서 보기 조건을 확인하세요.</p>';
     if (!all.length) all = [opt.log ? 1 : 0];
     var hi, lo, y, ticks = [], ax = opt.axFmt || fmtAx, base;
@@ -93,6 +93,12 @@
         var v = s.vals[ci]; if (v == null) return;
         var inf = !isFinite(v), x = cx - n * bw / 2 + si * bw, col = opt.colorOf ? opt.colorOf(si, ci) : s.color;
         if (opt.log && !inf && v <= 0) { out.push('<text class="lbl" x="' + (x + bw / 2) + '" y="' + (y(base) - 5) + '" text-anchor="middle">0' + '</text>'); return; }
+        if (s.lows) {   // Min ~ Max 를 한 막대로(아래 끝 Min · 위 끝 Max)
+          var lv = s.lows[ci]; if (lv == null) return;
+          var ya = y(v), yb = y(lv);
+          out.push('<rect' + attr(si, ci) + ' x="' + (x + 0.5) + '" y="' + Math.min(ya, yb) + '" width="' + Math.max(1, bw - 1) + '" height="' + Math.max(1, Math.abs(yb - ya)) + '" fill="' + col + '">' + tip(si, ci, v) + '</rect>');
+          out.push(text(x + bw / 2, Math.min(ya, yb), v, true) + text(x + bw / 2, Math.max(ya, yb), lv, false)); return;
+        }
         var y0 = y(base), y1 = y(inf ? hi : v), top = Math.min(y0, y1), neg = !inf && v < 0;
         out.push('<rect' + attr(si, ci) + ' x="' + (x + 0.5) + '" y="' + top + '" width="' + Math.max(1, bw - 1) + '" height="' + Math.max(1, Math.abs(y1 - y0)) + '" fill="' + col + '"' + (inf || over(v) ? ' opacity=".45"' : '') + '>' + tip(si, ci, v) + '</rect>');
         out.push(neg ? text(x + bw / 2, Math.max(y0, y1), v, false) : text(x + bw / 2, top, v, true));
@@ -166,18 +172,19 @@
     p.page = pg.page;
     if (withCtl) $('#ctl-' + id).innerHTML = ctl(id);
     var blocks = function (title, get, o) {
-      var mk = function (list) { return list.map(function (i) { return { name: names[i], color: COLORS[i % COLORS.length], vals: rows.map(function (r) { return get(r, i); }), idx: i }; }); };
-      var one = function (ser, sub) { var oo = Object.assign({}, o, { type: p.type }); if (oo.wrap) oo = oo.wrap(oo, ser); return '<div class="win"><h3>' + h(title) + (sub ? ' — ' + h(sub) : '') + '</h3>' + chart(cats, ser, oo) + '</div>'; };
+      var mk = function (list) { return list.map(function (i) { return { name: names[i], color: COLORS[i % COLORS.length], vals: rows.map(function (r) { return get(r, i); }), lows: o.low ? rows.map(function (r) { return o.low(r, i); }) : null, idx: i }; }); };
+      var one = function (ser, sub) { var oo = Object.assign({}, o, { type: o.low ? 'bar' : p.type }); if (oo.wrap) oo = oo.wrap(oo, ser); return '<div class="win"><h3>' + h(title) + (sub ? ' — ' + h(sub) : '') + '</h3>' + chart(cats, ser, oo) + '</div>'; };
       if (!vis.length) return '<div class="win"><h3>' + h(title) + '</h3><p class="sub nochart">표시할 항목을 하나 이상 켜 주세요.</p></div>';
       return p.mode === 'combined' ? one(mk(vis), '') : vis.map(function (i) { return one(mk([i]), names[i]); }).join('');
     };
     var html = '';
     if (id === 'st') {
-      var lines = res.allow ? [{ v: res.allow, label: '허용 ' + res.allow, color: '#c8341f' }, { v: -res.allow, label: '−허용', color: '#c8341f' }] : [];
+      var lp = res.allow ? [{ v: res.allow, label: '허용 +' + res.allow, color: '#c8341f' }] : [], ln = res.allow ? [{ v: -res.allow, label: '허용 −' + res.allow, color: '#c8341f' }] : [], lines = lp.concat(ln);
       var lab = p.label === 'off' ? null : function (v) { return E.fmtLabel(v, p.label); };
-      var so = function (key, word) { return { yLabel: U, lines: lines, label: lab, tip: function (si, ci) { return 'Channel: ' + cats[ci] + '\nScenario: ' + this.names[si] + '\n' + word + ': ' + E.fmtLabel(this.vals[si][ci], 'd2') + ' ' + U; }, wrap: function (oo, ser) { oo.tip = oo.tip.bind({ names: ser.map(function (s) { return s.name; }), vals: ser.map(function (s) { return s.vals; }) }); return oo; } }; };
-      html += '<div id="c-max">' + blocks('시나리오별 Max Stress', function (r, i) { return r.max[i]; }, so('max', 'Max Stress')) + '</div>';
-      html += '<div id="c-min">' + blocks('시나리오별 Min Stress', function (r, i) { return r.min[i]; }, so('min', 'Min Stress')) + '</div>';
+      var so = function (word, ls, low) { return { yLabel: U, lines: ls, linesInScale: true, label: lab, low: low, tall: !!low, tip: function (si, ci) { return 'Channel: ' + cats[ci] + '\nScenario: ' + this.names[si] + '\n' + (low ? 'Max Stress: ' + E.fmtLabel(this.vals[si][ci], 'd2') + ' ' + U + '\nMin Stress: ' + E.fmtLabel(this.lows[si][ci], 'd2') + ' ' + U : word + ': ' + E.fmtLabel(this.vals[si][ci], 'd2') + ' ' + U); }, wrap: function (oo, ser) { oo.tip = oo.tip.bind({ names: ser.map(function (s) { return s.name; }), vals: ser.map(function (s) { return s.vals; }), lows: ser.map(function (s) { return s.lows; }) }); return oo; } }; };
+      html += '<div id="c-mm">' + blocks('시나리오별 Min ~ Max Stress', function (r, i) { return r.max[i]; }, so('', lines, function (r, i) { return r.min[i]; })) + '<p class="sub">막대의 아래 끝이 Min, 위 끝이 Max 입니다. 0 선 아래는 압축입니다.</p></div>';
+      html += '<div id="c-max">' + blocks('시나리오별 Max Stress', function (r, i) { return r.max[i]; }, so('Max Stress', lp)) + '</div>';
+      html += '<div id="c-min">' + blocks('시나리오별 Min Stress', function (r, i) { return r.min[i]; }, so('Min Stress', ln)) + '</div>';
       html += '<div class="win"><h3>Max / Min 비교 <small>채널마다 전 시나리오의 최대 인장(빨강) ~ 최대 압축(파랑)</small></h3><div id="c-env">' + (cats.length ? bars(cats, [], { yLabel: U, lines: lines, label: lab, float: rows.map(function (r) { return r.peakMax == null || r.peakMin == null ? null : { lo: r.peakMin, hi: r.peakMax }; }) }) + '<div class="legend"><span><i class="sw" style="background:#c8341f"></i>최대 인장(Max 의 최댓값)</span><span><i class="sw" style="background:#154b6e"></i>최대 압축(Min 의 최솟값)</span></div>' : '<p class="sub nochart">표시할 채널이 없습니다.</p>') + '</div></div>';
     } else {
       var isL = id === 'lf', G = E.GRADES, Lm = res.limits, cap = Lm[2] * 3, byC = p.by === 'case';
